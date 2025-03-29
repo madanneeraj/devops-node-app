@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS = credentials('github-credentials') // GitHub credentials in Jenkins
+        GITHUB_CREDENTIALS = credentials('github-credentials') // GitHub credentials in Jenkinss
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // DockerHub credentials in Jenkins
     }
 
