@@ -7,10 +7,12 @@ pipeline {
     }
 
     stages {
-        stage('Clone Repository') {
-            steps {
-                git url: 'https://github.com/madanneeraj/devops-node-app.git', credentialsId: 'github-credentials'
-            }
+       stage('Clone Repository') {
+    steps {
+        git branch: 'main', url: 'https://github.com/madanneeraj/devops-node-app.git', credentialsId: 'github-credentials'
+    }
+         }
+
         }
 
         stage('Build') {
