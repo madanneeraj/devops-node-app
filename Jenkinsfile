@@ -2,17 +2,15 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS = credentials('github-credentials') // GitHub credentials in Jenkinss
+        GITHUB_CREDENTIALS = credentials('github-credentials') // GitHub credentials in Jenkins
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // DockerHub credentials in Jenkins
     }
 
     stages {
-       stage('Clone Repository') {
-    steps {
-        git branch: 'main', url: 'https://github.com/madanneeraj/devops-node-app.git', credentialsId: 'github-credentials'
-    }
-         }
-
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/madanneeraj/devops-node-app.git', credentialsId: "${GITHUB_CREDENTIALS}"
+            }
         }
 
         stage('Build') {
@@ -35,7 +33,9 @@ pipeline {
 
         stage('Docker Login') {
             steps {
-                sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                script {
+                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                }
             }
         }
 
@@ -47,7 +47,16 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'docker run -d -p 3000:3000 --name devops-app madanneer1995/devops-node-app:latest'
+                script {
+                    // Stop and remove the existing container if it is running
+                    sh '''
+                    if [ $(docker ps -q -f name=devops-app) ]; then
+                        docker stop devops-app
+                        docker rm devops-app
+                    fi
+                    docker run -d -p 3000:3000 --name devops-app madanneer1995/devops-node-app:latest
+                    '''
+                }
             }
         }
     }
