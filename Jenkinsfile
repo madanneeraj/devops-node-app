@@ -4,7 +4,40 @@ pipeline {
     environment {
         GITHUB_CREDENTIALS = 'github-credentials' // GitHub credentials ID in Jenkins
         DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // DockerHub credentials ID in Jenkins
-        KUBECONFIG = 'kubernetes-cred' // Kubernetes credentials ID in Jenkins (Secret File)
+        KUBECONFIG_CONTENT = '''
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/ubuntu/.minikube/ca.crt
+    extensions:
+    - extension:
+        last-update: Tue, 01 Apr 2025 17:46:07 UTC
+        provider: minikube.sigs.k8s.io
+        version: v1.35.0
+      name: cluster_info
+    server: https://192.168.49.2:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    extensions:
+    - extension:
+        last-update: Tue, 01 Apr 2025 17:46:07 UTC
+        provider: minikube.sigs.k8s.io
+        version: v1.35.0
+      name: context_info
+    namespace: default
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /home/ubuntu/.minikube/profiles/minikube/client.crt
+    client-key: /home/ubuntu/.minikube/profiles/minikube/client.key
+'''
     }
 
     stages {
@@ -48,18 +81,16 @@ pipeline {
 
         stage('Kubernetes Deploy') {
             steps {
-                withCredentials([file(credentialsId: KUBECONFIG, variable: 'KUBE_CONFIG')]) {
+                script {
+                    writeFile file: 'kubeconfig', text: env.KUBECONFIG_CONTENT
+                    sh 'export KUBECONFIG=$(pwd)/kubeconfig'
                     sh '''
-                    # Set KUBECONFIG environment variable to the path of the kubeconfig file
-                    export KUBECONFIG=$KUBE_CONFIG
-                    
-                    # Create or update the deployment
                     kubectl apply -f - <<EOF
                     apiVersion: apps/v1
                     kind: Deployment
                     metadata:
                       name: devops-app
-                      namespace: jenkins
+                      namespace: default
                     spec:
                       replicas: 1
                       selector:
@@ -76,14 +107,13 @@ pipeline {
                             ports:
                             - containerPort: 3000
                     EOF
-                    
-                    # Create or update the service
+
                     kubectl apply -f - <<EOF
                     apiVersion: v1
                     kind: Service
                     metadata:
                       name: devops-service
-                      namespace: jenkins
+                      namespace: default
                     spec:
                       selector:
                         app: devops-app
