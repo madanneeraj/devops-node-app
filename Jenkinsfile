@@ -80,52 +80,53 @@ users:
         }
 
         stage('Kubernetes Deploy') {
-            steps {
-                script {
-                    writeFile file: 'kubeconfig', text: env.KUBECONFIG_CONTENT
-                    sh 'export KUBECONFIG=$(pwd)/kubeconfig'
-                    sh '''
-                    kubectl apply -f - <<EOF
-                    apiVersion: apps/v1
-                    kind: Deployment
-                    metadata:
-                      name: devops-app
-                      namespace: default
-                    spec:
-                      replicas: 1
-                      selector:
-                        matchLabels:
-                          app: devops-app
-                      template:
-                        metadata:
-                          labels:
-                            app: devops-app
-                        spec:
-                          containers:
-                          - name: devops-node-app
-                            image: madanneer1995/devops-node-app:latest
-                            ports:
-                            - containerPort: 3000
-                    EOF
+    steps {
+        script {
+            writeFile file: 'kubeconfig', text: env.KUBECONFIG_CONTENT
+            sh 'export KUBECONFIG=$(pwd)/kubeconfig'
+            sh '''
+            kubectl apply -f - <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-app
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-app
+  template:
+    metadata:
+      labels:
+        app: devops-app
+    spec:
+      containers:
+      - name: devops-node-app
+        image: madanneer1995/devops-node-app:latest
+        ports:
+        - containerPort: 3000
+EOF
 
-                    kubectl apply -f - <<EOF
-                    apiVersion: v1
-                    kind: Service
-                    metadata:
-                      name: devops-service
-                      namespace: default
-                    spec:
-                      selector:
-                        app: devops-app
-                      ports:
-                      - protocol: TCP
-                        port: 3000
-                        targetPort: 3000
-                    EOF
-                    '''
-                }
-            }
+            kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-service
+  namespace: default
+spec:
+  selector:
+    app: devops-app
+  ports:
+  - protocol: TCP
+    port: 3000
+    targetPort: 3000
+EOF
+            '''
         }
+    }
+}
+
     }
 
     post {
