@@ -47,58 +47,54 @@ pipeline {
         }
 
         stage('Kubernetes Deploy') {
-            steps {
-                withCredentials([string(credentialsId: KUBECONFIG, variable: 'KUBE_CONFIG')]) {
-                    script {
-                        // Write the kubeconfig Secret Text to a temporary file
-                        writeFile(file: '/tmp/kubeconfig', text: "${KUBE_CONFIG}")
-
-                        // Set KUBECONFIG to the temporary file
-                        sh '''
-                        export KUBECONFIG=/tmp/kubeconfig
-                        
-                        # Create or update the deployment
-                        kubectl apply -f - <<EOF
-                        apiVersion: apps/v1
-                        kind: Deployment
-                        metadata:
-                          name: devops-app
-                          namespace: jenkins
-                        spec:
-                          replicas: 1
-                          selector:
-                            matchLabels:
-                              app: devops-app
-                          template:
-                            metadata:
-                              labels:
-                                app: devops-app
-                            spec:
-                              containers:
-                              - name: devops-node-app
-                                image: madanneer1995/devops-node-app:latest
-                                ports:
-                                - containerPort: 3000
-                        EOF
-                        
-                        # Create or update the service
-                        kubectl apply -f - <<EOF
-                        apiVersion: v1
-                        kind: Service
-                        metadata:
-                          name: devops-service
-                          namespace: jenkins
-                        spec:
-                          selector:
-                            app: devops-app
-                          ports:
-                          - protocol: TCP
-                            port: 3000
-                            targetPort: 3000
-                        EOF
-                        '''
-                    }
-                }
+    steps {
+        withCredentials([file(credentialsId: 'kubernetes-cred', variable: 'KUBE_CONFIG')]) {
+            sh '''
+            export KUBECONFIG=$KUBE_CONFIG
+            
+            # Create or update the deployment
+            kubectl apply -f - <<EOF
+            apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: devops-app
+              namespace: jenkins
+            spec:
+              replicas: 1
+              selector:
+                matchLabels:
+                  app: devops-app
+              template:
+                metadata:
+                  labels:
+                    app: devops-app
+                spec:
+                  containers:
+                  - name: devops-node-app
+                    image: madanneer1995/devops-node-app:latest
+                    ports:
+                    - containerPort: 3000
+            EOF
+            
+            # Create or update the service
+            kubectl apply -f - <<EOF
+            apiVersion: v1
+            kind: Service
+            metadata:
+              name: devops-service
+              namespace: jenkins
+            spec:
+              selector:
+                app: devops-app
+              ports:
+              - protocol: TCP
+                port: 3000
+                targetPort: 3000
+            EOF
+            '''
+        }
+    }
+        }
             }
         }
     }
