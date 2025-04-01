@@ -2,15 +2,15 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS = credentials('github-credentials') // GitHub credentials in Jenkins.
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // DockerHub credentials in Jenkins
-        KUBECONFIG = credentials('kubernetes-cred') // Kubernetes credentials in Jenkins
+        GITHUB_CREDENTIALS = 'github-credentials' // GitHub credentials ID in Jenkins.
+        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // DockerHub credentials ID in Jenkins
+        KUBECONFIG = 'kubernetes-cred' // Kubernetes credentials ID in Jenkins
     }
 
     stages {
         stage('Clone Repository') {
             steps {
-                git branch: 'main', url: 'https://github.com/madanneeraj/devops-node-app.git', credentialsId: "${GITHUB_CREDENTIALS}"
+                git branch: 'main', url: 'https://github.com/madanneeraj/devops-node-app.git', credentialsId: GITHUB_CREDENTIALS
             }
         }
 
@@ -34,8 +34,8 @@ pipeline {
 
         stage('Docker Login') {
             steps {
-                script {
-                    sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+                withCredentials([usernamePassword(credentialsId: DOCKERHUB_CREDENTIALS, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
             }
         }
@@ -48,9 +48,11 @@ pipeline {
 
         stage('Kubernetes Deploy') {
             steps {
-                script {
+                withCredentials([file(credentialsId: KUBECONFIG, variable: 'KUBE_CONFIG')]) {
                     sh '''
-                    # Create a deployment if not exists or update the existing one
+                    export KUBECONFIG=$KUBE_CONFIG
+                    
+                    # Create or update the deployment
                     kubectl apply -f - <<EOF
                     apiVersion: apps/v1
                     kind: Deployment
@@ -73,8 +75,8 @@ pipeline {
                             ports:
                             - containerPort: 3000
                     EOF
-
-                    # Expose the deployment as a service
+                    
+                    # Create or update the service
                     kubectl apply -f - <<EOF
                     apiVersion: v1
                     kind: Service
