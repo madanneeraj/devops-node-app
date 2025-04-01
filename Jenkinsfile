@@ -4,6 +4,7 @@ pipeline {
     environment {
         GITHUB_CREDENTIALS = credentials('github-credentials') // GitHub credentials in Jenkins
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials') // DockerHub credentials in Jenkins
+        KUBECONFIG = credentials('kubernetes-cred') // Kubernetes credentials in Jenkins
     }
 
     stages {
@@ -45,16 +46,49 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Kubernetes Deploy') {
             steps {
                 script {
-                    // Stop and remove the existing container if it is running
                     sh '''
-                    if [ $(docker ps -q -f name=devops-app) ]; then
-                        docker stop devops-app
-                        docker rm devops-app
-                    fi
-                    docker run -d -p 3000:3000 --name devops-app madanneer1995/devops-node-app:latest
+                    # Create a deployment if not exists or update the existing one
+                    kubectl apply -f - <<EOF
+                    apiVersion: apps/v1
+                    kind: Deployment
+                    metadata:
+                      name: devops-app
+                      namespace: jenkins
+                    spec:
+                      replicas: 1
+                      selector:
+                        matchLabels:
+                          app: devops-app
+                      template:
+                        metadata:
+                          labels:
+                            app: devops-app
+                        spec:
+                          containers:
+                          - name: devops-node-app
+                            image: madanneer1995/devops-node-app:latest
+                            ports:
+                            - containerPort: 3000
+                    EOF
+
+                    # Expose the deployment as a service
+                    kubectl apply -f - <<EOF
+                    apiVersion: v1
+                    kind: Service
+                    metadata:
+                      name: devops-service
+                      namespace: jenkins
+                    spec:
+                      selector:
+                        app: devops-app
+                      ports:
+                      - protocol: TCP
+                        port: 3000
+                        targetPort: 3000
+                    EOF
                     '''
                 }
             }
