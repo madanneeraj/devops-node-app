@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS = 'github-credentials' // GitHub credentials ID in Jenkins
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials' // DockerHub credentials ID in Jenkins
+        GITHUB_CREDENTIALS = 'github' // GitHub credentials ID in Jenkins
+        DOCKERHUB_CREDENTIALS = 'docker' // DockerHub credentials ID in Jenkins
         KUBECONFIG_CONTENT = '''
 apiVersion: v1
 clusters:
