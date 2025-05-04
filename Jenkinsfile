@@ -2,41 +2,8 @@ pipeline {
     agent any
 
     environment {
-         GITHUB_CREDENTIALS = 'github'
+        GITHUB_CREDENTIALS = 'github'
         DOCKERHUB_CREDENTIALS = 'docker'
-apiVersion: v1
-clusters:
-- cluster:
-    certificate-authority: /home/ubuntu/.minikube/ca.crt
-    extensions:
-    - extension:
-        last-update: Tue, 01 Apr 2025 17:46:07 UTC
-        provider: minikube.sigs.k8s.io
-        version: v1.35.0
-      name: cluster_info
-    server: https://192.168.49.2:8443
-  name: minikube
-contexts:
-- context:
-    cluster: minikube
-    extensions:
-    - extension:
-        last-update: Tue, 01 Apr 2025 17:46:07 UTC
-        provider: minikube.sigs.k8s.io
-        version: v1.35.0
-      name: context_info
-    namespace: default
-    user: minikube
-  name: minikube
-current-context: minikube
-kind: Config
-preferences: {}
-users:
-- name: minikube
-  user:
-    client-certificate: /home/ubuntu/.minikube/profiles/minikube/client.crt
-    client-key: /home/ubuntu/.minikube/profiles/minikube/client.key
-'''
     }
 
     stages {
@@ -78,13 +45,13 @@ users:
             }
         }
 
-       stage('Kubernetes Deploy') {
-    steps {
-        withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
-            sh '''
-            export KUBECONFIG=$KUBECONFIG_FILE
+        stage('Kubernetes Deploy') {
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG_FILE
 
-            kubectl apply -f - <<EOF
+                        kubectl apply -f - <<EOF
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -107,7 +74,7 @@ spec:
         - containerPort: 3000
 EOF
 
-            kubectl apply -f - <<EOF
+                        kubectl apply -f - <<EOF
 apiVersion: v1
 kind: Service
 metadata:
@@ -121,10 +88,10 @@ spec:
     port: 3000
     targetPort: 3000
 EOF
-            '''
+                    '''
+                }
+            }
         }
-    }
-}
     }
 
     post {
