@@ -2,9 +2,8 @@ pipeline {
     agent any
 
     environment {
-        GITHUB_CREDENTIALS = 'github' // GitHub credentials ID in Jenkins
-        DOCKERHUB_CREDENTIALS = 'docker' // DockerHub credentials ID in Jenkins
-        KUBECONFIG_CONTENT = '''
+         GITHUB_CREDENTIALS = 'github'
+        DOCKERHUB_CREDENTIALS = 'docker'
 apiVersion: v1
 clusters:
 - cluster:
@@ -79,12 +78,12 @@ users:
             }
         }
 
-        stage('Kubernetes Deploy') {
+       stage('Kubernetes Deploy') {
     steps {
-        script {
-            writeFile file: 'kubeconfig', text: env.KUBECONFIG_CONTENT
-            sh 'export KUBECONFIG=$(pwd)/kubeconfig'
+        withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
             sh '''
+            export KUBECONFIG=$KUBECONFIG_FILE
+
             kubectl apply -f - <<EOF
 apiVersion: apps/v1
 kind: Deployment
@@ -126,7 +125,6 @@ EOF
         }
     }
 }
-
     }
 
     post {
